@@ -9,13 +9,13 @@
 "orientation": "portrait",
 "icons": [
 {
-"src": "https://www.google.com/search?q=https://picsum.photos/192/192",
+"src": "https://ksizorcode.github.io/AppctividadesCulturales/assets/icon/ico.png",
 "sizes": "192x192",
 "type": "image/png",
 "purpose": "any maskable"
 },
 {
-"src": "https://picsum.photos/512/512",
+"src": "https://ksizorcode.github.io/AppctividadesCulturales/assets/icon/ico.png",
 "sizes": "512x512",
 "type": "image/png",
 "purpose": "any"
