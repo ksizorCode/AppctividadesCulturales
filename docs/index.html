@@ -2,231 +2,178 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>folixApp 2026 | Eventos Culturales</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos Asturias 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <!-- Leaflet para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- FullCalendar -->
+    <!-- FullCalendar para la vista de calendario -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <style>
-        body { font-family: 'Outfit', sans-serif; }
-        #map { height: 500px; border-radius: 1.5rem; transition: all 0.3s ease; }
-        .fc-event { cursor: pointer; border-radius: 4px !important; padding: 2px 4px !important; font-size: 0.8rem !important; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
-        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .nature-gradient { background: linear-gradient(135deg, #065f46 0%, #059669 100%); }
-        
-        /* Animaciones */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        
-        #loading-overlay { backdrop-filter: blur(8px); }
-        input[type="range"] { accent-color: #059669; }
-
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        #map { height: 400px; border-radius: 0.75rem; }
+        .fc-event { cursor: pointer; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        #loading-overlay { backdrop-filter: blur(4px); }
     </style>
 
-    <link rel="manifest" href="./site.webmanifest" />
-    <link rel="icon" type="image/png" href="./assets/icon/favicon-96x96.png" sizes="96x96" />
-    
-    <meta property="og:title" content="folixApp" />
-    <meta property="og:description" content="Descubre la agenda cultural de Asturias">
-    <meta name="description" content="folixApp - Eventos y cultura en Asturias">
+
+
+<!-- Enlace al archivo de manifiesto -->
+<link rel="manifest" href="./manifest.webmanifest">
+
+<!-- Meta etiquetas adicionales para compatibilidad con iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AsturFest">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+
+<link rel="icon" type="image/png" href="./assets/icon/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="./assets/icon/favicon.svg" />
+<link rel="shortcut icon" href="./assets/icon/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/icon/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="FolixApp" />
+<link rel="manifest" href="./site.webmanifest" />
+
+
+
+    <meta property="og:title" content="FolixApp" />
+    <meta property="og:description" content="Eventos Culturales en Asturia">
+    <meta property="og:image" content="./assets/icon/apple-touch-icon.png">
+
+   	
+    <meta name="description" content="FolixApp">
+    <meta name="author" content="miguelesteban.net">
+    <meta name="language" content="spanish">
+    <meta name="distribution" content="global">
+
+
+
+
 </head>
-<body class="bg-[#f0f9f4] min-h-screen text-slate-800 antialiased overflow-x-hidden">
+<body class="bg-gray-50 min-h-screen text-gray-900 font-sans">
 
     <!-- Indicador de carga -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/60 z-[100] flex items-center justify-center hidden">
-        <div class="flex flex-col items-center p-8 glass-card rounded-3xl shadow-2xl">
-            <div class="animate-spin rounded-full h-14 w-14 border-4 border-emerald-100 border-t-emerald-600 mb-4"></div>
-            <p class="text-emerald-800 font-semibold tracking-wide">Cultivando eventos...</p>
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 z-[100] flex items-center justify-center hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mb-2"></div>
+            <p class="text-blue-700 font-medium">Cargando eventos...</p>
         </div>
     </div>
 
-    <!-- Header con Nav Integrado -->
-    <header class="nature-gradient text-white shadow-xl sticky top-0 z-50 px-4 py-3 md:py-4">
-        <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                <div class="flex items-center gap-3">
-                    <div class="bg-white/20 p-2 rounded-2xl">
-                        <i data-lucide="sprout" class="w-6 h-6"></i>
-                    </div>
-                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">folixApp <span class="font-light opacity-80 text-lg hidden md:inline ml-1">2026</span></h1>
-                </div>
-                <!-- Botón para filtros en móvil -->
-                <button onclick="toggleMobileFilters()" class="lg:hidden bg-white/20 p-2 rounded-xl border border-white/10 hover:bg-white/30 transition">
-                    <i data-lucide="filter" class="w-6 h-6 text-white"></i>
-                </button>
-            </div>
+    <!-- Header -->
+    <header class="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="calendar-days"></i> Asturias Eventos 2026
+            </h1>
+ <nav class="grid grid-cols-4 sm:flex bg-blue-800 rounded-xl p-1.5 gap-1 w-full max-w-2xl mx-auto shadow-lg text-white">
+        
+        <button onclick="switchView('list')" id="btn-list" 
+            class="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg transition hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-700/50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list"><path d="M3 5h.01"></path><path d="M3 12h.01"></path><path d="M3 19h.01"></path><path d="M8 5h13"></path><path d="M8 12h13"></path><path d="M8 19h13"></path></svg>
+            <span class="text-sm font-medium">Lista</span>
+        </button>
 
-            <!-- Nav: Modificado para ocultar texto en móviles pequeños -->
-            <nav class="flex bg-black/10 rounded-2xl p-1 gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar shadow-inner">
-                <button onclick="switchView('list')" id="btn-list" 
-                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl transition duration-300 hover:bg-white/10 active:scale-95 bg-white/20 shadow-sm border border-white/10">
-                    <i data-lucide="list" class="w-5 h-5"></i>
-                    <span class="text-sm font-semibold hidden sm:inline">Lista</span>
-                </button>
+        <button onclick="switchView('grid')" id="btn-grid" 
+            class="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg transition hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+            <span class="text-sm font-medium">Ficha</span>
+        </button>
 
-                <button onclick="switchView('grid')" id="btn-grid" 
-                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl transition duration-300 hover:bg-white/10 active:scale-95">
-                    <i data-lucide="layout-grid" class="w-5 h-5"></i>
-                    <span class="text-sm font-semibold hidden sm:inline">Tarjeta</span>
-                </button>
+        <button onclick="switchView('calendar')" id="btn-calendar" 
+            class="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg transition hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+            <span class="text-sm font-medium">Calendario</span>
+        </button>
 
-                <button onclick="switchView('calendar')" id="btn-calendar" 
-                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl transition duration-300 hover:bg-white/10 active:scale-95">
-                    <i data-lucide="calendar" class="w-5 h-5"></i>
-                    <span class="text-sm font-semibold hidden sm:inline">Calendario</span>
-                </button>
+        <button onclick="switchView('map')" id="btn-map" 
+            class="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg transition hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"></path><path d="M15 5.764v15"></path><path d="M9 3.236v15"></path></svg>
+            <span class="text-sm font-medium">Mapa</span>
+        </button>
 
-                <button onclick="switchView('map')" id="btn-map" 
-                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-xl transition duration-300 hover:bg-white/10 active:scale-95">
-                    <i data-lucide="map" class="w-5 h-5"></i>
-                    <span class="text-sm font-semibold hidden sm:inline">Mapa</span>
-                </button>
-            </nav>
+    </nav>
         </div>
     </header>
 
-    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-80px)]">
+    <main class="max-w-7xl mx-auto px-2 py-6">
         
-        <!-- Sidebar de Filtros (Plegado por defecto en móvil, desplegado en PC) -->
-        <aside id="sidebar-filters" class="fixed inset-0 lg:static z-[45] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out lg:w-80 p-4 lg:p-6 bg-emerald-950/20 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none overflow-y-auto custom-scrollbar">
-            <div class="glass-card p-6 rounded-[2.5rem] shadow-sm sticky top-24 border border-emerald-100 flex flex-col gap-6 lg:min-h-[70vh]">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold flex items-center gap-2 text-emerald-900">
-                        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i> Filtros
-                    </h2>
-                    <button onclick="toggleMobileFilters()" class="lg:hidden text-emerald-900 p-2 border border-emerald-100 rounded-xl hover:bg-emerald-50 transition">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+        <!-- Filtros -->
+        <section class="bg-white p-2 rounded-xl shadow-sm mb-8 border border-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                    <input type="text" id="search-name" placeholder="Nombre, lugar, concejo..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <select id="filter-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                        <option value="">Todas</option>
+                        <option value="Cultura">Cultura</option>
+                        <option value="Música">Música</option>
+                        <option value="Gastronomía">Gastronomía</option>
+                        <option value="Deporte">Deporte</option>
+                        <option value="Ocio">Ocio</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                    <input type="date" id="filter-start" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                    <input type="date" id="filter-end" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex gap-2">
+                    <button onclick="getLocation()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                        <i data-lucide="map-pin"></i> Cerca de mí
+                    </button>
+                    <button onclick="togglePastEvents()" id="btn-past" class="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition">
+                        Mostrar pasados
                     </button>
                 </div>
-
-                <div class="space-y-6 flex-1">
-                    <!-- Buscar -->
-                    <div>
-                        <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 ml-1">Buscar</label>
-                        <div class="relative">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500"></i>
-                            <input type="text" id="search-name" placeholder="Evento, lugar..." 
-                                class="w-full bg-white border border-emerald-100 rounded-2xl pl-10 pr-4 py-3 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition shadow-sm text-sm">
-                        </div>
-                    </div>
-
-                    <!-- Categoría -->
-                    <div>
-                        <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 ml-1">Categoría</label>
-                        <select id="filter-category" class="w-full bg-white border border-emerald-100 rounded-2xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none shadow-sm text-sm appearance-none cursor-pointer">
-                            <option value="">Todas las categorías</option>
-                            <option value="Cultura">Cultura</option>
-                            <option value="Música">Música</option>
-                            <option value="Gastronomía">Gastronomía</option>
-                            <option value="Deporte">Deporte</option>
-                            <option value="Ocio">Ocio</option>
-                        </select>
-                    </div>
-
-                    <!-- Rango de Precios (Slider solicitado) -->
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider ml-1">Precio Máximo</label>
-                            <span id="price-value" class="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">Cualquiera</span>
-                        </div>
-                        <input type="range" id="filter-price" min="0" max="100" step="5" value="100" class="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer">
-                        <div class="flex justify-between mt-2 text-[10px] text-gray-400 font-medium uppercase tracking-tight">
-                            <span>0€</span>
-                            <span>Gratis</span>
-                            <span>100€+</span>
-                        </div>
-                    </div>
-
-                    <!-- Fechas -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 ml-1">Desde</label>
-                            <input type="date" id="filter-start" class="w-full bg-white border border-emerald-100 rounded-2xl px-3 py-2 text-xs focus:ring-4 focus:ring-emerald-500/10 outline-none shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 ml-1">Hasta</label>
-                            <input type="date" id="filter-end" class="w-full bg-white border border-emerald-100 rounded-2xl px-3 py-2 text-xs focus:ring-4 focus:ring-emerald-500/10 outline-none shadow-sm">
-                        </div>
-                    </div>
-
-                    <div class="pt-4 space-y-3">
-                        <button onclick="getLocation()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-emerald-200">
-                            <i data-lucide="map-pin" class="w-4 h-4"></i> Cerca de mí
-                        </button>
-                        
-                        <button onclick="togglePastEvents()" id="btn-past" class="w-full bg-white border border-emerald-100 text-emerald-700 font-semibold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition border-dashed">
-                             <i data-lucide="history" class="w-4 h-4"></i> Mostrar animados
-                        </button>
-
-                        <button onclick="resetFilters()" class="w-full text-emerald-600 text-sm font-bold hover:underline py-2">
-                            Restablecer filtros
-                        </button>
-                    </div>
-                </div>
+                <button onclick="resetFilters()" class="text-blue-600 font-medium hover:underline">Limpiar filtros</button>
             </div>
-        </aside>
+        </section>
 
-        <!-- Contenedor Principal de Contenido -->
-        <main class="flex-1 p-4 lg:p-8">
-            <!-- Vistas -->
-            <div id="view-list" class="space-y-6 max-w-4xl mx-auto"></div>
-            
-            <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 hidden"></div>
-            
-            <div id="view-calendar" class="glass-card p-6 md:p-8 rounded-[2.5rem] shadow-sm hidden overflow-hidden">
-                <div id="calendar-el" class="min-h-[600px]"></div>
-            </div>
-            
-            <div id="view-map" class="hidden">
-                <div class="glass-card p-3 rounded-[2.5rem] shadow-xl overflow-hidden border border-emerald-100">
-                    <div id="map"></div>
-                </div>
-            </div>
+        <!-- Contenedores de Vistas -->
+        <div id="view-list" class="space-y-4"></div>
+        <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+        <div id="view-calendar" class="bg-white p-4 rounded-xl shadow-sm hidden">
+            <div id="calendar-el"></div>
+        </div>
+        <div id="view-map" class="hidden">
+            <div id="map" class="shadow-md"></div>
+        </div>
 
-            <!-- Estados Vacíos o Error -->
-            <div id="no-results" class="hidden flex flex-col items-center justify-center py-32 text-slate-400 fade-in text-center">
-                <div class="bg-emerald-50 p-10 rounded-[3.5rem] mb-6 shadow-inner ring-4 ring-white">
-                    <i data-lucide="leaf" class="w-16 h-16 text-emerald-300"></i>
-                </div>
-                <p class="text-2xl font-extrabold text-emerald-900 mb-2">No encontramos nada bajo este roble...</p>
-                <p class="text-sm font-medium opacity-70 mb-8 max-w-xs">Prueba a limpiar los filtros o expandir tu búsqueda para ver más eventos.</p>
-                <button onclick="resetFilters()" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-2xl shadow-xl shadow-emerald-200 transition hover:-translate-y-1 active:translate-y-0">Resetear filtros</button>
-            </div>
+        <!-- Mensajes de Error o Sin Resultados -->
+        <div id="no-results" class="hidden text-center py-20 text-gray-500">
+            <i data-lucide="search-x" class="mx-auto w-12 h-12 mb-4 text-gray-300"></i>
+            <p class="text-xl">No hemos encontrado eventos con esos criterios.</p>
+        </div>
 
-            <div id="error-message" class="hidden flex flex-col items-center justify-center py-32 text-red-500 fade-in text-center">
-                <i data-lucide="alert-triangle" class="w-16 h-16 mb-4"></i>
-                <p class="text-xl font-bold">Vaya, algo salió mal</p>
-                <p id="error-details" class="text-sm">No pudimos cargar la agenda cultural.</p>
-            </div>
-        </main>
-        <a href="./_index.html">Versión Anterior</a>
-    </div>
+        <div id="error-message" class="hidden text-center py-20 text-red-500">
+            <i data-lucide="alert-circle" class="mx-auto w-12 h-12 mb-4 text-red-300"></i>
+            <p class="text-xl font-bold">Error al cargar los datos</p>
+            <p id="error-details">No se pudo cargar la base de datos de eventos.</p>
+        </div>
+    </main>
 
     <!-- Modal de Detalles -->
-    <div id="modal" class="fixed inset-0 bg-emerald-950/40 backdrop-blur-md hidden z-[60] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[3rem] max-w-3xl w-full max-h-[95vh] overflow-hidden shadow-2xl relative flex flex-col fade-in border-4 border-white">
-            <!-- Botón Cerrar -->
-            <button onclick="closeModal()" class="absolute top-6 right-6 bg-white/30 hover:bg-white/60 backdrop-blur-xl p-3 rounded-2xl z-20 transition-all text-white hover:rotate-90 shadow-2xl">
-                <i data-lucide="x" class="w-6 h-6"></i>
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 p-2 rounded-full z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div id="modal-content" class="overflow-y-auto flex-1 custom-scrollbar"></div>
+            <div id="modal-content"></div>
         </div>
     </div>
 
@@ -248,32 +195,32 @@
             loading.classList.remove('hidden');
             
             try {
-                const response = await fetch('./assets/data/datos.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                // Ajuste de ruta: Usamos una ruta relativa más segura o absoluta según el origen
+                const jsonPath = './assets/data/datos.json';
+                
+                const response = await fetch(jsonPath);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 eventos = await response.json();
+                
+                // Normalizar IDs
                 eventos = eventos.map((ev, index) => ({
                     ...ev,
-                    id: ev.id || index + 1,
-                    numericPrice: parsePrice(ev.gratuito)
+                    id: ev.id || index + 1
                 }));
 
                 render();
+                if (currentView === 'calendar' && calendar) calendar.refetchEvents();
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error cargando JSON:", error);
                 errorView.classList.remove('hidden');
-                errorDetails.innerText = `Error: ${error.message}`;
+                errorDetails.innerText = `Error: ${error.message}. Asegúrate de que assets/json/datos.json existe y es accesible.`;
             } finally {
                 loading.classList.add('hidden');
             }
-        }
-
-        function parsePrice(str) {
-            if (!str) return 0;
-            const s = str.toLowerCase();
-            if (s.includes('gratis') || s.includes('libre')) return 0;
-            const match = str.match(/\d+/);
-            return match ? parseInt(match[0]) : 0;
         }
 
         // --- INICIALIZACIÓN ---
@@ -281,24 +228,18 @@
             lucide.createIcons();
             initMap();
             initCalendar();
+            
+            // Cargar datos
             fetchEventos();
-
+            
             // Listeners para filtros
             document.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('input', () => {
-                    if (el.id === 'filter-price') {
-                        const val = parseInt(el.value);
-                        document.getElementById('price-value').innerText = val === 100 ? 'Cualquiera' : (val === 0 ? 'Gratis' : `Máx ${val}€`);
-                    }
-                    render();
-                });
+                el.addEventListener('change', render);
+                if (el.tagName === 'INPUT' && el.type === 'text') {
+                    el.addEventListener('keyup', render);
+                }
             });
         };
-
-        function toggleMobileFilters() {
-            const sidebar = document.getElementById('sidebar-filters');
-            sidebar.classList.toggle('-translate-x-full');
-        }
 
         function switchView(view) {
             currentView = view;
@@ -306,18 +247,12 @@
                 const el = document.getElementById(`view-${v}`);
                 const btn = document.getElementById(`btn-${v}`);
                 if (el) el.classList.toggle('hidden', v !== view);
-                
-                if (btn) {
-                    if (v === view) {
-                        btn.classList.add('bg-white/20', 'shadow-sm', 'border', 'white/10');
-                    } else {
-                        btn.classList.remove('bg-white/20', 'shadow-sm', 'border', 'white/10');
-                    }
-                }
+                if (btn) btn.classList.toggle('bg-blue-600', v === view);
             });
             
             if (view === 'calendar' && calendar) {
                 calendar.render();
+                updateCalendarData(getFilteredEvents());
             }
             if (view === 'map' && map) {
                 setTimeout(() => map.invalidateSize(), 200);
@@ -328,9 +263,11 @@
         function togglePastEvents() {
             showPast = !showPast;
             const btn = document.getElementById('btn-past');
-            btn.innerHTML = showPast ? '<i data-lucide="eye-off" class="w-4 h-4"></i> Ocultar pasados' : '<i data-lucide="history" class="w-4 h-4"></i> Mostrar pasados';
-            btn.classList.toggle('bg-emerald-100', showPast);
-            lucide.createIcons();
+            if (btn) {
+                btn.innerText = showPast ? 'Ocultar pasados' : 'Mostrar pasados';
+                btn.classList.toggle('bg-blue-100', showPast);
+                btn.classList.toggle('text-blue-700', showPast);
+            }
             render();
         }
 
@@ -338,8 +275,8 @@
             const mapEl = document.getElementById('map');
             if (!mapEl) return;
             map = L.map('map').setView([43.36, -5.84], 8);
-            L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
         }
 
@@ -351,8 +288,6 @@
                 locale: 'es',
                 firstDay: 1,
                 headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                themeSystem: 'standard',
-                eventClassNames: 'bg-emerald-600 border-none text-white font-bold p-1 rounded-lg',
                 eventClick: (info) => openModal(info.event.id)
             });
         }
@@ -362,6 +297,8 @@
                 navigator.geolocation.getCurrentPosition(pos => {
                     userLocation = [pos.coords.latitude, pos.coords.longitude];
                     render();
+                }, (err) => {
+                    console.warn("Geolocalización desactivada:", err);
                 });
             }
         }
@@ -370,37 +307,40 @@
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
 
         function resetFilters() {
             document.getElementById('search-name').value = '';
             document.getElementById('filter-category').value = '';
-            document.getElementById('filter-price').value = 100;
-            document.getElementById('price-value').innerText = 'Cualquiera';
             document.getElementById('filter-start').value = '';
             document.getElementById('filter-end').value = '';
             userLocation = null;
             render();
         }
 
+        // --- LÓGICA DE FILTRADO ---
         function getFilteredEvents() {
-            const search = document.getElementById('search-name').value.toLowerCase();
-            const category = document.getElementById('filter-category').value;
-            const maxPrice = parseInt(document.getElementById('filter-price').value);
-            const fStart = document.getElementById('filter-start').value;
-            const fEnd = document.getElementById('filter-end').value;
+            const search = (document.getElementById('search-name')?.value || '').toLowerCase();
+            const category = document.getElementById('filter-category')?.value || '';
+            const fStart = document.getElementById('filter-start')?.value;
+            const fEnd = document.getElementById('filter-end')?.value;
 
             return eventos.filter(ev => {
                 const dateStart = new Date(ev.fecha_inicio);
                 const dateEnd = new Date(ev.fecha_fin);
                 
                 if (!showPast && dateEnd < now) return false;
-                if (maxPrice < 100 && ev.numericPrice > maxPrice) return false;
 
-                const matchText = ev.titulo.toLowerCase().includes(search) || ev.concejo.toLowerCase().includes(search);
-                const matchCat = !category || ev.categoria === category;
+                const matchText = (ev.titulo || '').toLowerCase().includes(search) || 
+                                 (ev.lugar || '').toLowerCase().includes(search) || 
+                                 (ev.concejo || '').toLowerCase().includes(search);
+                
+                const matchCat = category === "" || ev.categoria === category;
 
                 let matchRange = true;
                 if (fStart) matchRange = matchRange && dateStart >= new Date(fStart);
@@ -409,107 +349,81 @@
                 let matchDist = true;
                 if (userLocation && ev.gtp) {
                     const coords = Array.isArray(ev.gtp) ? ev.gtp : ev.gtp.split(',').map(Number);
-                    matchDist = getDistance(userLocation[0], userLocation[1], coords[0], coords[1]) < 30;
+                    const dist = getDistance(userLocation[0], userLocation[1], coords[0], coords[1]);
+                    matchDist = dist < 30;
                 }
 
                 return matchText && matchCat && matchRange && matchDist;
             }).sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
         }
 
+        // --- RENDERIZADO DE VISTAS ---
         function render() {
             if (eventos.length === 0) return;
             const filtered = getFilteredEvents();
 
             updateListView(filtered);
             updateGridView(filtered);
-            updateCalendar(filtered);
-            updateMap(filtered);
+            updateCalendarData(filtered);
+            updateMapMarkers(filtered);
 
-            document.getElementById('no-results').classList.toggle('hidden', filtered.length > 0);
+            const noResults = document.getElementById('no-results');
+            if (noResults) noResults.classList.toggle('hidden', filtered.length > 0);
             lucide.createIcons();
         }
 
-        function formatDateTime(iso) {
-            const d = new Date(iso);
-            return {
-                date: d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-                time: d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-            };
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString('es-ES', { 
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+            });
         }
 
         function updateListView(data) {
             const container = document.getElementById('view-list');
             if (!container) return;
-            container.innerHTML = data.map(ev => {
-                const dt = formatDateTime(ev.fecha_inicio);
-                return `
-                <div onclick="openModal(${ev.id})" class="bg-white p-4 sm:p-6 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-emerald-900/10 transition duration-500 cursor-pointer flex flex-col sm:flex-row gap-6 items-center border border-emerald-50 group fade-in">
-                    <div class="relative w-full sm:w-40 h-40 flex-shrink-0">
-                        <img src="${ev.portada}" class="w-full h-full rounded-[2rem] object-cover bg-emerald-50 shadow-inner group-hover:scale-105 transition duration-700" onerror="this.src='https://via.placeholder.com/150?text=folixApp'" alt="${ev.titulo}">
-                        <div class="absolute -top-3 -right-3 nature-gradient text-white text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase shadow-xl tracking-widest border-2 border-white">
-                            ${ev.categoria || 'Evento'}
+            container.innerHTML = data.map(ev => `
+                <div onclick="openModal(${ev.id})" class="bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-blue-300 transition cursor-pointer flex gap-4 items-center">
+                    <img src="${ev.portada}" class="w-20 h-20 rounded-lg object-cover bg-gray-100" onerror="this.src='https://via.placeholder.com/150?text=Asturias'" alt="${ev.titulo}">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg leading-tight">${ev.titulo}</h3>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formatDate(ev.fecha_inicio)}</span>
+                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${ev.concejo}</span>
+                            <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold uppercase tracking-wider text-[10px]">${ev.categoria || 'Evento'}</span>
                         </div>
                     </div>
-                    <div class="flex-1 text-center sm:text-left">
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-3 justify-center sm:justify-start">
-                             <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-extrabold shadow-sm">
-                                <i data-lucide="calendar" class="w-4 h-4"></i> ${dt.date} • ${dt.time}
-                             </div>
-                             <span class="text-[10px] uppercase font-bold text-slate-400 tracking-tighter">${ev.tipo}</span>
-                        </div>
-                        <h3 class="font-bold text-2xl text-slate-800 leading-tight group-hover:text-emerald-700 transition duration-300 mb-2">${ev.titulo}</h3>
-                        <div class="flex flex-wrap justify-center sm:justify-start gap-5 text-sm text-slate-400 font-semibold mt-4">
-                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-xl"><i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i> ${ev.concejo}</span>
-                            <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-xl"><i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> ${ev.edad_recomendada ||'TP'}</span>
-                        </div>
+                    <div class="text-right flex flex-col items-end">
+                        <span class="font-bold text-blue-600 text-sm">${ev.gratuito}</span>
+                        <i data-lucide="chevron-right" class="text-gray-300 mt-1"></i>
                     </div>
-                    <div class="flex flex-col items-center sm:items-end gap-3 px-4">
-                        <span class="px-5 py-2.5 bg-emerald-600 text-white font-extrabold rounded-2xl text-sm shadow-xl shadow-emerald-200 border-2 border-emerald-500">${ev.gratuito}</span>
-                        <div class="w-12 h-12 rounded-2xl border border-emerald-100 flex items-center justify-center text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition duration-500 shadow-sm animate-pulse-slow">
-                             <i data-lucide="chevron-right" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
+                </div>
+            `).join('');
         }
 
         function updateGridView(data) {
             const container = document.getElementById('view-grid');
             if (!container) return;
-            container.innerHTML = data.map(ev => {
-                const dt = formatDateTime(ev.fecha_inicio);
-                return `
-                <div onclick="openModal(${ev.id})" class="bg-white rounded-[3rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-emerald-900/15 transition-all duration-700 cursor-pointer border-4 border-white group flex flex-col h-full fade-in">
-                    <div class="relative h-60 overflow-hidden bg-emerald-50">
-                        <img src="${ev.portada}" class="w-full h-full object-cover group-hover:scale-125 transition duration-1000" onerror="this.src='https://via.placeholder.com/400x250?text=folixApp'" alt="${ev.titulo}">
-                        <div class="absolute top-5 left-5 nature-gradient px-4 py-2 rounded-2xl text-[10px] font-extrabold text-white shadow-2xl backdrop-blur uppercase tracking-widest border border-white/20">
-                            ${ev.categoria || 'Evento'}
-                        </div>
-                        <div class="absolute bottom-5 left-5 right-5 flex justify-between items-end">
-                             <span class="bg-white/95 backdrop-blur px-4 py-2 rounded-2xl text-xs font-extrabold text-emerald-900 shadow-xl border border-white">
-                                ${dt.date}
-                             </span>
-                        </div>
+            container.innerHTML = data.map(ev => `
+                <div onclick="openModal(${ev.id})" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 group">
+                    <div class="relative h-48 overflow-hidden bg-gray-100">
+                        <img src="${ev.portada}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/400x250?text=Asturias'" alt="${ev.titulo}">
+                        <span class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm uppercase">${ev.categoria || 'Evento'}</span>
                     </div>
-                    <div class="p-8 flex-1 flex flex-col">
-                        <div class="flex items-center gap-2 mb-4">
-                             <span class="text-[10px] font-extrabold text-emerald-600 bg-emerald-50/50 px-3 py-1.5 rounded-xl uppercase tracking-widest border border-emerald-100">${ev.tipo}</span>
-                        </div>
-                        <h3 class="font-bold text-2xl text-slate-800 mb-4 group-hover:text-emerald-700 transition duration-300 line-clamp-2 leading-tight">${ev.titulo}</h3>
-                        <p class="text-sm text-slate-500 font-medium mb-8 line-clamp-3 leading-relaxed flex-1 opacity-80">${ev.descripcion}</p>
-                        
-                        <div class="flex items-center justify-between pt-6 border-t border-emerald-50/50">
-                            <span class="text-xs font-bold text-slate-400 flex items-center gap-2">
-                                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i> ${ev.concejo}
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl mb-2 line-clamp-1">${ev.titulo}</h3>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">${ev.descripcion}</p>
+                        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                            <span class="text-xs font-medium text-gray-600 flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i> ${ev.concejo}
                             </span>
-                            <span class="text-emerald-800 font-black text-base">${ev.gratuito}</span>
+                            <span class="text-blue-600 font-bold">${ev.gratuito}</span>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>
+            `).join('');
         }
 
-        function updateCalendar(data) {
+        function updateCalendarData(data) {
             if (!calendar) return;
             calendar.removeAllEvents();
             calendar.addEventSource(data.map(ev => ({
@@ -517,101 +431,109 @@
                 title: ev.titulo,
                 start: ev.fecha_inicio,
                 end: ev.fecha_fin,
-                classNames: 'nature-gradient border-none text-white px-2 py-1'
+                backgroundColor: ev.categoria === 'Música' ? '#ef4444' : '#3b82f6',
+                borderColor: 'transparent'
             })));
         }
 
-        function updateMap(data) {
+        function updateMapMarkers(data) {
             if (!map) return;
-            map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
+            map.eachLayer(layer => { if(layer instanceof L.Marker) map.removeLayer(layer); });
             data.forEach(ev => {
                 if (ev.gtp) {
                     const coords = Array.isArray(ev.gtp) ? ev.gtp : ev.gtp.split(',').map(Number);
-                    L.marker(coords).addTo(map).bindPopup(`
-                        <div class="p-3 min-w-[220px] font-sans">
-                            <span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 block">${ev.categoria}</span>
-                            <p class="font-bold text-slate-900 text-xl mb-1 leading-tight">${ev.titulo}</p>
-                            <p class="text-xs text-slate-400 mb-4 font-bold flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${ev.concejo}</p>
-                            <button onclick="openModal(${ev.id})" class="w-full nature-gradient text-white py-3 rounded-2xl text-xs font-extrabold shadow-lg shadow-emerald-100 hover:scale-[1.02] transition">Detalles del evento</button>
-                        </div>
-                    `);
+                    L.marker(coords).addTo(map)
+                        .bindPopup(`
+                            <div class="p-1">
+                                <p class="font-bold text-sm">${ev.titulo}</p>
+                                <p class="text-xs text-gray-500">${ev.concejo}</p>
+                                <button onclick="openModal(${ev.id})" class="text-blue-600 text-xs font-bold mt-2 underline">Ver detalles</button>
+                            </div>
+                        `);
                 }
             });
         }
 
+        // --- MODAL Y COMPARTIR ---
         function openModal(id) {
             const ev = eventos.find(e => e.id == id);
             if (!ev) return;
-            const content = document.getElementById('modal-content');
-            const dt = formatDateTime(ev.fecha_inicio);
             
-            const shareText = encodeURIComponent(`¡Mira este evento en Asturias! ${ev.titulo} el ${dt.date} en ${ev.lugar}.`);
-            const wsLink = `https://wa.me/?text=${shareText}`;
+            const content = document.getElementById('modal-content');
+            if (!content) return;
+            
+            const textToShare = encodeURIComponent(`¡Mira este evento en Asturias! ${ev.titulo} el ${formatDate(ev.fecha_inicio)} en ${ev.lugar}. Más info: ${ev.web_url}`);
+            const wsLink = `https://wa.me/?text=${textToShare}`;
+            
+            const startStr = ev.fecha_inicio.replace(/-|:|\.\d\d\d/g,"");
+            const endStr = ev.fecha_fin.replace(/-|:|\.\d\d\d/g,"");
+            const gCalLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(ev.descripcion)}&location=${encodeURIComponent(ev.direccion + ", " + ev.concejo)}`;
 
             content.innerHTML = `
-                <div class="relative min-h-[350px]">
-                    <img src="${ev.portada}" class="w-full h-96 object-cover" onerror="this.src='https://via.placeholder.com/800x400?text=folixApp'" alt="${ev.titulo}">
-                    <div class="absolute inset-0 bg-gradient-to-t from-emerald-950 via-emerald-950/40 to-transparent"></div>
-                    <div class="absolute bottom-0 left-0 right-0 p-8 md:p-12">
-                        <div class="flex items-center gap-3 mb-5">
-                            <span class="bg-emerald-500 text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl border border-emerald-400/50">${ev.categoria || 'Evento'}</span>
-                            <span class="bg-white/20 text-white px-4 py-2 rounded-full text-xs font-bold backdrop-blur-xl uppercase tracking-widest border border-white/20">${ev.tipo}</span>
-                        </div>
-                        <h2 class="text-4xl md:text-5xl font-black text-white leading-[1] mb-4 tracking-tight">${ev.titulo}</h2>
-                        <div class="flex flex-wrap items-center gap-6 text-emerald-100 font-bold text-sm">
-                            <span class="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-xl backdrop-blur"><i data-lucide="calendar" class="w-5 h-5"></i> ${dt.date} — ${dt.time}</span>
-                            <span class="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-xl backdrop-blur"><i data-lucide="map-pin" class="w-5 h-5"></i> ${ev.concejo}</span>
-                        </div>
+                <div class="relative bg-gray-100 min-h-[200px]">
+                    <img src="${ev.portada}" class="w-full h-64 object-cover" onerror="this.src='https://via.placeholder.com/800x400?text=Asturias'" alt="${ev.titulo}">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-6">
+                        <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase mb-2 inline-block">${ev.categoria || 'Evento'}</span>
+                        <h2 class="text-2xl font-bold text-white leading-tight">${ev.titulo}</h2>
                     </div>
                 </div>
-                <div class="p-8 md:p-12">
-                    <!-- Info Badges -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                        <div class="bg-emerald-50/50 p-6 rounded-[2.5rem] border-2 border-white flex items-start gap-4 shadow-sm">
-                            <div class="bg-white p-4 rounded-2xl shadow-xl text-emerald-600 ring-4 ring-emerald-50"><i data-lucide="clock" class="w-6 h-6"></i></div>
-                            <div>
-                                <p class="text-[10px] font-black text-emerald-800/40 uppercase tracking-widest mb-1">Horario</p>
-                                <p class="text-lg font-black text-emerald-900">${dt.time}</p>
-                                <p class="text-xs text-emerald-600 font-bold">Fin: ${formatDateTime(ev.fecha_fin).time}</p>
+                <div class="p-6 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-gray-600">
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="calendar" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Cuándo</p>
+                                    <p class="text-sm font-medium text-gray-800">${formatDate(ev.fecha_inicio)}</p>
+                                    <p class="text-xs text-gray-500">Hasta: ${formatDate(ev.fecha_fin)}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="map-pin" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Dónde</p>
+                                    <p class="text-sm font-medium text-gray-800">${ev.lugar}</p>
+                                    <p class="text-xs text-gray-500">${ev.direccion}, ${ev.concejo}</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-emerald-50/50 p-6 rounded-[2.5rem] border-2 border-white flex items-start gap-4 shadow-sm">
-                            <div class="bg-white p-4 rounded-2xl shadow-xl text-emerald-600 ring-4 ring-emerald-50"><i data-lucide="tickets" class="w-6 h-6"></i></div>
-                            <div>
-                                <p class="text-[10px] font-black text-emerald-800/40 uppercase tracking-widest mb-1">Entrada</p>
-                                <p class="text-lg font-black text-emerald-900">${ev.gratuito}</p>
-                                <p class="text-xs text-emerald-600 font-bold">${ev.edad_recomendada || 'Todo público'}</p>
+                        <div class="space-y-4">
+                             <div class="flex items-start gap-3">
+                                <i data-lucide="ticket" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Entrada</p>
+                                    <p class="text-sm font-bold text-blue-600">${ev.gratuito}</p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="bg-emerald-50/50 p-6 rounded-[2.5rem] border-2 border-white flex items-start gap-4 shadow-sm">
-                            <div class="bg-white p-4 rounded-2xl shadow-xl text-emerald-600 ring-4 ring-emerald-50"><i data-lucide="map" class="w-6 h-6"></i></div>
-                            <div>
-                                <p class="text-[10px] font-black text-emerald-800/40 uppercase tracking-widest mb-1">Lugar</p>
-                                <p class="text-lg font-black text-emerald-900 line-clamp-1">${ev.lugar}</p>
-                                <p class="text-xs text-emerald-600 font-bold line-clamp-1">${ev.direccion}</p>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="tag" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Tipo</p>
+                                    <p class="text-sm font-medium text-gray-800">${ev.tipo}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="max-w-2xl mb-12">
-                        <h4 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
-                             <div class="w-2 h-10 bg-emerald-500 rounded-full shadow-lg shadow-emerald-200"></div>
-                             Acerca de esta joya
-                        </h4>
-                        <p class="text-slate-500 leading-relaxed text-xl font-medium opacity-90">${ev.descripcion}</p>
+                    <div class="prose prose-sm max-w-none text-gray-700 mb-8 leading-relaxed">
+                        <h4 class="text-gray-900 font-bold mb-2 border-b border-gray-100 pb-2">Sobre este evento</h4>
+                        <p>${ev.descripcion}</p>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex flex-col sm:flex-row gap-5 pt-12 border-t-2 border-emerald-50/50">
-                        <a href="${ev.web_url}" target="_blank" class="flex-1 nature-gradient text-white py-5 px-8 rounded-3xl text-lg font-black flex items-center justify-center gap-3 hover:-translate-y-2 transition duration-500 shadow-2xl shadow-emerald-200 active:scale-95">
-                            <i data-lucide="external-link" class="w-6 h-6"></i> Web Oficial
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <a href="${ev.web_url}" target="_blank" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-sm">
+                            <i data-lucide="external-link" class="w-4 h-4"></i> Web Oficial
                         </a>
-                        <button onclick="window.open('${wsLink}', '_blank')" class="bg-[#25D366] text-white py-5 px-8 rounded-3xl text-lg font-black flex items-center justify-center gap-3 hover:-translate-y-2 transition duration-500 shadow-2xl shadow-green-100 active:scale-95">
-                            <i data-lucide="message-circle" class="w-6 h-6"></i> Compartir
+                        <button onclick="window.open('${wsLink}', '_blank')" class="bg-green-500 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-600 transition shadow-sm">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
                         </button>
+                        <a href="${gCalLink}" target="_blank" class="flex-1 border border-gray-200 py-3 px-4 rounded-xl font-bold text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-50 transition">
+                            <i data-lucide="calendar-plus" class="w-4 h-4"></i> Google
+                        </a>
                     </div>
                 </div>
             `;
+            
             document.getElementById('modal').classList.remove('hidden');
             lucide.createIcons();
         }
@@ -620,7 +542,26 @@
             document.getElementById('modal').classList.add('hidden');
         }
 
-        window.onclick = e => { if (e.target == document.getElementById('modal')) closeModal(); }
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target == modal) closeModal();
+        }
     </script>
+
+
+<!-- llamada al Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('Service Worker registrado con éxito:', registration.scope);
+        })
+        .catch((error) => {
+          console.log('Fallo en el registro del Service Worker:', error);
+        });
+    });
+  }
+</script>
 </body>
 </html>
