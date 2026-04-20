@@ -3,22 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
-
-
-    <base href="https://ksizorcode.github.io/AppctividadesCulturales/" />
-	<meta name="description" content="Agenda Gijon Eventos culturales" />
-	<link rel="canonical" href="https://ksizorcode.github.io/AppctividadesCulturales/" />
-	<meta property="og:locale" content="es_ES" />
-	<meta property="og:type" content="website" />
-	<meta property="og:title" content="Eventos Culturales- Agenda Gijón" />
-	<meta property="og:description" content="Agenda Gijon Eventos Culturales" />
-	<meta property="og:url" content="https://ksizorcode.github.io/AppctividadesCulturales/" />
-	<meta property="og:site_name" content="Agenda Gijón" />
-	<meta property="article:modified_time" content="2024-04-15T17:39:39+00:00" />
-	<meta name="twitter:card" content="summary_large_image" />
-
-<title>Agenda Asturias de Eventos Cultural - Qué hacer hoy en Asturias</title>
+    <title>Eventos Asturias 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -27,11 +12,25 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- mi css personalizado -->
-     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        #map { height: 400px; border-radius: 0.75rem; }
+        .fc-event { cursor: pointer; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        #loading-overlay { backdrop-filter: blur(4px); }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-900 font-sans">
+
+    <!-- Indicador de carga -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 z-[100] flex items-center justify-center hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mb-2"></div>
+            <p class="text-blue-700 font-medium">Cargando eventos...</p>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
@@ -51,7 +50,7 @@
     <main class="max-w-7xl mx-auto px-4 py-6">
         
         <!-- Filtros -->
-        <section class="bg-white p-6 rounded-xl shadow-sm mb-8">
+        <section class="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
@@ -90,7 +89,7 @@
             </div>
         </section>
 
-        <!-- Vistas de Contenido -->
+        <!-- Contenedores de Vistas -->
         <div id="view-list" class="space-y-4"></div>
         <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
         <div id="view-calendar" class="bg-white p-4 rounded-xl shadow-sm hidden">
@@ -100,9 +99,16 @@
             <div id="map" class="shadow-md"></div>
         </div>
 
+        <!-- Mensajes de Error o Sin Resultados -->
         <div id="no-results" class="hidden text-center py-20 text-gray-500">
             <i data-lucide="search-x" class="mx-auto w-12 h-12 mb-4 text-gray-300"></i>
             <p class="text-xl">No hemos encontrado eventos con esos criterios.</p>
+        </div>
+
+        <div id="error-message" class="hidden text-center py-20 text-red-500">
+            <i data-lucide="alert-circle" class="mx-auto w-12 h-12 mb-4 text-red-300"></i>
+            <p class="text-xl font-bold">Error al cargar los datos</p>
+            <p id="error-details">No se pudo cargar la base de datos de eventos.</p>
         </div>
     </main>
 
@@ -117,21 +123,8 @@
     </div>
 
     <script>
-        // --- DATOS ---
-        const eventos = [
-            { id: 1, titulo: "Semana Santa de Avilés", fecha_inicio: "2026-03-29T10:00:00", fecha_fin: "2026-04-05T22:00:00", descripcion: "Procesiones históricas de Interés Turístico Nacional.", gratuito: "Gratis", web_url: "https://www.aviles.es", portada: "https://picsum.photos/seed/aviles/600/400", tipo: "Religioso/Cultural", categoria: "Cultura", concejo: "Avilés", lugar: "Casco Histórico", gtp: [43.5562, -5.9248], direccion: "Plaza de España" },
-            { id: 2, titulo: "Fiesta del Bollo", fecha_inicio: "2026-04-06T12:00:00", fecha_fin: "2026-04-06T20:00:00", descripcion: "Comida multitudinaria en las calles de Avilés para celebrar el lunes de Pascua.", gratuito: "Gratis", web_url: "https://www.aviles.es", portada: "https://picsum.photos/seed/bollo/600/400", tipo: "Gastronómico", categoria: "Gastronomía", concejo: "Avilés", lugar: "Parque del Muelle", gtp: [43.5555, -5.9230], direccion: "Parque del Muelle" },
-            { id: 3, titulo: "L'Ascensión", fecha_inicio: "2026-05-14T09:00:00", fecha_fin: "2026-05-17T21:00:00", descripcion: "La gran fiesta del campo en la ciudad.", gratuito: "Gratis", web_url: "https://www.oviedo.es", portada: "https://picsum.photos/seed/oviedo/600/400", tipo: "Feria Tradicional", categoria: "Cultura", concejo: "Oviedo", lugar: "Casco Antiguo", gtp: [43.3603, -5.8448], direccion: "Plaza Catedral" },
-            { id: 4, titulo: "Boombastic Festival", fecha_inicio: "2026-07-16T16:00:00", fecha_fin: "2026-07-18T04:00:00", descripcion: "El festival de música urbana más importante de Asturias.", gratuito: "Desde 65€", web_url: "https://www.boombasticfestival.com", portada: "https://picsum.photos/seed/music/600/400", tipo: "Musical", categoria: "Música", concejo: "Llanera", lugar: "La Morgal", gtp: [43.4278, -5.8450], direccion: "Aeródromo de la Morgal" },
-            { id: 5, titulo: "Noche de San Juan", fecha_inicio: "2026-06-23T20:00:00", fecha_fin: "2026-06-24T06:00:00", descripcion: "Celebración del solsticio de verano con hogueras.", gratuito: "Gratis", web_url: "https://www.turismoasturias.es", portada: "https://picsum.photos/seed/fire/600/400", tipo: "Cultura/Fiesta", categoria: "Cultura", concejo: "Mieres", lugar: "Plaza Ayuntamiento", gtp: [43.2505, -5.7760], direccion: "Plaza de la Constitución" },
-            { id: 6, titulo: "Gijón Motortown", fecha_inicio: "2026-05-22T10:00:00", fecha_fin: "2026-05-24T20:00:00", descripcion: "Exhibición de motor y clásicos.", gratuito: "8€", web_url: "https://www.gijon.es", portada: "https://picsum.photos/seed/motor/600/400", tipo: "Exhibición", categoria: "Ocio", concejo: "Gijón", lugar: "Feria Luis Adaro", gtp: [43.5365, -5.6325], direccion: "Dr. Fleming" },
-            { id: 7, titulo: "Feria del Libro de Oviedo", fecha_inicio: "2026-05-02T11:00:00", fecha_fin: "2026-05-11T20:00:00", descripcion: "Firmas y cultura literaria.", gratuito: "Gratis", web_url: "https://www.oviedo.es", portada: "https://picsum.photos/seed/books/600/400", tipo: "Cultural", categoria: "Cultura", concejo: "Oviedo", lugar: "Paseo de los Álamos", gtp: [43.3615, -5.8505], direccion: "Calle Uría" },
-            { id: 8, titulo: "Metrópoli Gijón", fecha_inicio: "2026-06-26T17:00:00", fecha_fin: "2026-07-05T22:00:00", descripcion: "Cultura pop y conciertos.", gratuito: "6€", web_url: "https://www.metropoligijon.com", portada: "https://picsum.photos/seed/pop/600/400", tipo: "Festival Mix", categoria: "Ocio", concejo: "Gijón", lugar: "Recinto Ferial", gtp: [43.5365, -5.6325], direccion: "Paseo Dr. Fleming" },
-            { id: 9, titulo: "Festival de la Sidra Nava", fecha_inicio: "2026-07-10T12:00:00", fecha_fin: "2026-07-12T23:00:00", descripcion: "Sidra, folk y tradición.", gratuito: "Gratis", web_url: "https://www.ayto-nava.es", portada: "https://picsum.photos/seed/cider/600/400", tipo: "Gastronómico", categoria: "Gastronomía", concejo: "Nava", lugar: "Centro", gtp: [43.3585, -5.5020], direccion: "Calle Real" }
-            // Nota: Se pueden añadir más eventos siguiendo este patrón
-        ];
-
-        // --- ESTADO ---
+        // --- ESTADO GLOBAL ---
+        let eventos = [];
         let currentView = 'list';
         let showPast = false;
         let map = null;
@@ -139,12 +132,50 @@
         let userLocation = null;
         const now = new Date();
 
+        // --- CARGA DE DATOS ---
+        async function fetchEventos() {
+            const loading = document.getElementById('loading-overlay');
+            const errorView = document.getElementById('error-message');
+            const errorDetails = document.getElementById('error-details');
+            loading.classList.remove('hidden');
+            
+            try {
+                // Ajuste de ruta: Usamos una ruta relativa más segura o absoluta según el origen
+                const jsonPath = './assets/data/datos.json';
+                
+                const response = await fetch(jsonPath);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                eventos = await response.json();
+                
+                // Normalizar IDs
+                eventos = eventos.map((ev, index) => ({
+                    ...ev,
+                    id: ev.id || index + 1
+                }));
+
+                render();
+                if (currentView === 'calendar' && calendar) calendar.refetchEvents();
+            } catch (error) {
+                console.error("Error cargando JSON:", error);
+                errorView.classList.remove('hidden');
+                errorDetails.innerText = `Error: ${error.message}. Asegúrate de que assets/json/datos.json existe y es accesible.`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
         // --- INICIALIZACIÓN ---
         window.onload = () => {
             lucide.createIcons();
             initMap();
             initCalendar();
-            render();
+            
+            // Cargar datos
+            fetchEventos();
             
             // Listeners para filtros
             document.querySelectorAll('input, select').forEach(el => {
@@ -158,22 +189,36 @@
         function switchView(view) {
             currentView = view;
             ['list', 'grid', 'calendar', 'map'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
-                document.getElementById(`btn-${v}`).classList.toggle('bg-blue-600', v === view);
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`btn-${v}`);
+                if (el) el.classList.toggle('hidden', v !== view);
+                if (btn) btn.classList.toggle('bg-blue-600', v === view);
             });
-            if (view === 'calendar') calendar.render();
-            if (view === 'map') setTimeout(() => map.invalidateSize(), 200);
+            
+            if (view === 'calendar' && calendar) {
+                calendar.render();
+                updateCalendarData(getFilteredEvents());
+            }
+            if (view === 'map' && map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
             render();
         }
 
         function togglePastEvents() {
             showPast = !showPast;
-            document.getElementById('btn-past').innerText = showPast ? 'Ocultar pasados' : 'Mostrar pasados';
-            document.getElementById('btn-past').classList.toggle('bg-gray-200', showPast);
+            const btn = document.getElementById('btn-past');
+            if (btn) {
+                btn.innerText = showPast ? 'Ocultar pasados' : 'Mostrar pasados';
+                btn.classList.toggle('bg-blue-100', showPast);
+                btn.classList.toggle('text-blue-700', showPast);
+            }
             render();
         }
 
         function initMap() {
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
             map = L.map('map').setView([43.36, -5.84], 8);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap'
@@ -182,6 +227,7 @@
 
         function initCalendar() {
             const calendarEl = document.getElementById('calendar-el');
+            if (!calendarEl) return;
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'es',
@@ -196,12 +242,14 @@
                 navigator.geolocation.getCurrentPosition(pos => {
                     userLocation = [pos.coords.latitude, pos.coords.longitude];
                     render();
+                }, (err) => {
+                    console.warn("Geolocalización desactivada:", err);
                 });
             }
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -220,53 +268,52 @@
             render();
         }
 
-        // --- LÓGICA DE RENDERIZADO ---
-        function render() {
-            const search = document.getElementById('search-name').value.toLowerCase();
-            const category = document.getElementById('filter-category').value;
-            const fStart = document.getElementById('filter-start').value;
-            const fEnd = document.getElementById('filter-end').value;
+        // --- LÓGICA DE FILTRADO ---
+        function getFilteredEvents() {
+            const search = (document.getElementById('search-name')?.value || '').toLowerCase();
+            const category = document.getElementById('filter-category')?.value || '';
+            const fStart = document.getElementById('filter-start')?.value;
+            const fEnd = document.getElementById('filter-end')?.value;
 
-            let filtered = eventos.filter(ev => {
+            return eventos.filter(ev => {
                 const dateStart = new Date(ev.fecha_inicio);
                 const dateEnd = new Date(ev.fecha_fin);
                 
-                // Ocultar pasados si no se solicita
                 if (!showPast && dateEnd < now) return false;
 
-                // Texto
-                const matchText = ev.titulo.toLowerCase().includes(search) || 
-                                 ev.lugar.toLowerCase().includes(search) || 
-                                 ev.concejo.toLowerCase().includes(search);
+                const matchText = (ev.titulo || '').toLowerCase().includes(search) || 
+                                 (ev.lugar || '').toLowerCase().includes(search) || 
+                                 (ev.concejo || '').toLowerCase().includes(search);
                 
-                // Categoría
                 const matchCat = category === "" || ev.categoria === category;
 
-                // Rango de fechas
                 let matchRange = true;
                 if (fStart) matchRange = matchRange && dateStart >= new Date(fStart);
                 if (fEnd) matchRange = matchRange && dateStart <= new Date(fEnd);
 
-                // Cerca de mí (rango 30km)
                 let matchDist = true;
-                if (userLocation) {
-                    const dist = getDistance(userLocation[0], userLocation[1], ev.gtp[0], ev.gtp[1]);
+                if (userLocation && ev.gtp) {
+                    const coords = Array.isArray(ev.gtp) ? ev.gtp : ev.gtp.split(',').map(Number);
+                    const dist = getDistance(userLocation[0], userLocation[1], coords[0], coords[1]);
                     matchDist = dist < 30;
                 }
 
                 return matchText && matchCat && matchRange && matchDist;
-            });
+            }).sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
+        }
 
-            // Ordenar por cercanía de fecha
-            filtered.sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
+        // --- RENDERIZADO DE VISTAS ---
+        function render() {
+            if (eventos.length === 0) return;
+            const filtered = getFilteredEvents();
 
-            // Actualizar Vistas
             updateListView(filtered);
             updateGridView(filtered);
-            updateCalendar(filtered);
-            updateMap(filtered);
+            updateCalendarData(filtered);
+            updateMapMarkers(filtered);
 
-            document.getElementById('no-results').classList.toggle('hidden', filtered.length > 0);
+            const noResults = document.getElementById('no-results');
+            if (noResults) noResults.classList.toggle('hidden', filtered.length > 0);
             lucide.createIcons();
         }
 
@@ -278,20 +325,21 @@
 
         function updateListView(data) {
             const container = document.getElementById('view-list');
+            if (!container) return;
             container.innerHTML = data.map(ev => `
                 <div onclick="openModal(${ev.id})" class="bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-blue-300 transition cursor-pointer flex gap-4 items-center">
-                    <img src="${ev.portada}" class="w-16 h-16 rounded-lg object-cover" alt="img">
+                    <img src="${ev.portada}" class="w-20 h-20 rounded-lg object-cover bg-gray-100" onerror="this.src='https://via.placeholder.com/150?text=Asturias'" alt="${ev.titulo}">
                     <div class="flex-1">
-                        <h3 class="font-bold text-lg">${ev.titulo}</h3>
-                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-4 h-4"></i> ${formatDate(ev.fecha_inicio)}</span>
-                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-4 h-4"></i> ${ev.lugar}, ${ev.concejo}</span>
-                            <span class="bg-blue-100 text-blue-700 px-2 rounded font-medium">${ev.categoria}</span>
+                        <h3 class="font-bold text-lg leading-tight">${ev.titulo}</h3>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formatDate(ev.fecha_inicio)}</span>
+                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${ev.concejo}</span>
+                            <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold uppercase tracking-wider text-[10px]">${ev.categoria || 'Evento'}</span>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="font-bold text-blue-600">${ev.gratuito}</span>
-                        <i data-lucide="chevron-right" class="text-gray-300 ml-2 inline"></i>
+                    <div class="text-right flex flex-col items-end">
+                        <span class="font-bold text-blue-600 text-sm">${ev.gratuito}</span>
+                        <i data-lucide="chevron-right" class="text-gray-300 mt-1"></i>
                     </div>
                 </div>
             `).join('');
@@ -299,11 +347,12 @@
 
         function updateGridView(data) {
             const container = document.getElementById('view-grid');
+            if (!container) return;
             container.innerHTML = data.map(ev => `
                 <div onclick="openModal(${ev.id})" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 group">
-                    <div class="relative h-48 overflow-hidden">
-                        <img src="${ev.portada}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="img">
-                        <span class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm">${ev.categoria}</span>
+                    <div class="relative h-48 overflow-hidden bg-gray-100">
+                        <img src="${ev.portada}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://via.placeholder.com/400x250?text=Asturias'" alt="${ev.titulo}">
+                        <span class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm uppercase">${ev.categoria || 'Evento'}</span>
                     </div>
                     <div class="p-4">
                         <h3 class="font-bold text-xl mb-2 line-clamp-1">${ev.titulo}</h3>
@@ -319,71 +368,112 @@
             `).join('');
         }
 
-        function updateCalendar(data) {
+        function updateCalendarData(data) {
+            if (!calendar) return;
             calendar.removeAllEvents();
             calendar.addEventSource(data.map(ev => ({
                 id: ev.id,
                 title: ev.titulo,
                 start: ev.fecha_inicio,
                 end: ev.fecha_fin,
-                color: ev.categoria === 'Música' ? '#ef4444' : '#3b82f6'
+                backgroundColor: ev.categoria === 'Música' ? '#ef4444' : '#3b82f6',
+                borderColor: 'transparent'
             })));
         }
 
-        function updateMap(data) {
-            // Limpiar marcadores previos
+        function updateMapMarkers(data) {
+            if (!map) return;
             map.eachLayer(layer => { if(layer instanceof L.Marker) map.removeLayer(layer); });
             data.forEach(ev => {
-                L.marker(ev.gtp).addTo(map)
-                    .bindPopup(`<div class="font-bold">${ev.titulo}</div><button onclick="openModal(${ev.id})" class="text-blue-600 text-xs mt-1">Ver detalles</button>`);
+                if (ev.gtp) {
+                    const coords = Array.isArray(ev.gtp) ? ev.gtp : ev.gtp.split(',').map(Number);
+                    L.marker(coords).addTo(map)
+                        .bindPopup(`
+                            <div class="p-1">
+                                <p class="font-bold text-sm">${ev.titulo}</p>
+                                <p class="text-xs text-gray-500">${ev.concejo}</p>
+                                <button onclick="openModal(${ev.id})" class="text-blue-600 text-xs font-bold mt-2 underline">Ver detalles</button>
+                            </div>
+                        `);
+                }
             });
         }
 
         // --- MODAL Y COMPARTIR ---
         function openModal(id) {
             const ev = eventos.find(e => e.id == id);
-            const content = document.getElementById('modal-content');
+            if (!ev) return;
             
-            // Generar links de compartir
+            const content = document.getElementById('modal-content');
+            if (!content) return;
+            
             const textToShare = encodeURIComponent(`¡Mira este evento en Asturias! ${ev.titulo} el ${formatDate(ev.fecha_inicio)} en ${ev.lugar}. Más info: ${ev.web_url}`);
             const wsLink = `https://wa.me/?text=${textToShare}`;
             
-            // Google Calendar Link
-            const gCalLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.titulo)}&dates=${ev.fecha_inicio.replace(/-|:|\.\d\d\d/g,"")}/${ev.fecha_fin.replace(/-|:|\.\d\d\d/g,"")}&details=${encodeURIComponent(ev.descripcion)}&location=${encodeURIComponent(ev.direccion + ", " + ev.concejo)}`;
+            const startStr = ev.fecha_inicio.replace(/-|:|\.\d\d\d/g,"");
+            const endStr = ev.fecha_fin.replace(/-|:|\.\d\d\d/g,"");
+            const gCalLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(ev.descripcion)}&location=${encodeURIComponent(ev.direccion + ", " + ev.concejo)}`;
 
             content.innerHTML = `
-                <img src="${ev.portada}" class="w-full h-64 object-cover" alt="portada">
-                <div class="p-8">
-                    <div class="flex justify-between items-start mb-4">
-                        <h2 class="text-3xl font-bold">${ev.titulo}</h2>
-                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">${ev.gratuito}</span>
+                <div class="relative bg-gray-100 min-h-[200px]">
+                    <img src="${ev.portada}" class="w-full h-64 object-cover" onerror="this.src='https://via.placeholder.com/800x400?text=Asturias'" alt="${ev.titulo}">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-6">
+                        <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase mb-2 inline-block">${ev.categoria || 'Evento'}</span>
+                        <h2 class="text-2xl font-bold text-white leading-tight">${ev.titulo}</h2>
                     </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 text-gray-600">
-                        <div class="space-y-3">
-                            <p class="flex items-center gap-3"><i data-lucide="calendar"></i> <span><strong>Inicio:</strong> ${formatDate(ev.fecha_inicio)}</span></p>
-                            <p class="flex items-center gap-3"><i data-lucide="calendar-check"></i> <span><strong>Fin:</strong> ${formatDate(ev.fecha_fin)}</span></p>
+                </div>
+                <div class="p-6 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-gray-600">
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="calendar" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Cuándo</p>
+                                    <p class="text-sm font-medium text-gray-800">${formatDate(ev.fecha_inicio)}</p>
+                                    <p class="text-xs text-gray-500">Hasta: ${formatDate(ev.fecha_fin)}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="map-pin" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Dónde</p>
+                                    <p class="text-sm font-medium text-gray-800">${ev.lugar}</p>
+                                    <p class="text-xs text-gray-500">${ev.direccion}, ${ev.concejo}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="space-y-3">
-                            <p class="flex items-center gap-3"><i data-lucide="map-pin"></i> <span><strong>Lugar:</strong> ${ev.lugar}, ${ev.concejo}</span></p>
-                            <p class="flex items-center gap-3"><i data-lucide="info"></i> <span><strong>Categoría:</strong> ${ev.categoria}</span></p>
+                        <div class="space-y-4">
+                             <div class="flex items-start gap-3">
+                                <i data-lucide="ticket" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Entrada</p>
+                                    <p class="text-sm font-bold text-blue-600">${ev.gratuito}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="tag" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">Tipo</p>
+                                    <p class="text-sm font-medium text-gray-800">${ev.tipo}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-4 rounded-xl mb-8">
-                        <h4 class="font-bold mb-2">Descripción</h4>
-                        <p class="text-gray-700">${ev.descripcion}</p>
+                    <div class="prose prose-sm max-w-none text-gray-700 mb-8 leading-relaxed">
+                        <h4 class="text-gray-900 font-bold mb-2 border-b border-gray-100 pb-2">Sobre este evento</h4>
+                        <p>${ev.descripcion}</p>
                     </div>
 
-                    <div class="flex flex-wrap gap-4">
-                        <a href="${ev.web_url}" target="_blank" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition">
-                            Ver web oficial <i data-lucide="external-link" class="w-5 h-5"></i>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <a href="${ev.web_url}" target="_blank" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-sm">
+                            <i data-lucide="external-link" class="w-4 h-4"></i> Web Oficial
                         </a>
-                        <button onclick="window.open('${wsLink}', '_blank')" class="bg-green-500 text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-600 transition">
-                             WhatsApp <i data-lucide="share-2" class="w-5 h-5"></i>
+                        <button onclick="window.open('${wsLink}', '_blank')" class="bg-green-500 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-600 transition shadow-sm">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
                         </button>
-                        <a href="${gCalLink}" target="_blank" class="flex-1 border border-gray-300 py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-100 transition">
-                            Google Calendar <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                        <a href="${gCalLink}" target="_blank" class="flex-1 border border-gray-200 py-3 px-4 rounded-xl font-bold text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-50 transition">
+                            <i data-lucide="calendar-plus" class="w-4 h-4"></i> Google
                         </a>
                     </div>
                 </div>
@@ -397,7 +487,6 @@
             document.getElementById('modal').classList.add('hidden');
         }
 
-        // Cerrar modal al clickar fuera
         window.onclick = function(event) {
             const modal = document.getElementById('modal');
             if (event.target == modal) closeModal();
