@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
 
 
@@ -19,20 +18,390 @@
 	<meta property="article:modified_time" content="2024-04-15T17:39:39+00:00" />
 	<meta name="twitter:card" content="summary_large_image" />
 
-
 <title>Agenda Asturias de Eventos Cultural - Qué hacer hoy en Asturias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet para el mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- FullCalendar para la vista de calendario -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-<link rel="stylesheet" href="assets/css/style.css">
+    <!-- mi css personalizado -->
+     <link rel="stylesheet" href="assets/css/style.css">
 </head>
+<body class="bg-gray-50 min-h-screen text-gray-900 font-sans">
 
-<body>
-<h1>Agenda Asturias de Eventos Cultural - Qué hacer hoy en Asturias</h1>
-<p>Listado de actividades y eventos en Gijón, Oviedo, Avilés, Mieres, Langreo y otros puntos de la provincia</p>
+    <!-- Header -->
+    <header class="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="calendar-days"></i> Asturias Eventos 2026
+            </h1>
+            <nav class="flex bg-blue-800 rounded-lg p-1">
+                <button onclick="switchView('list')" id="btn-list" class="px-4 py-2 rounded-md transition hover:bg-blue-600 flex items-center gap-2"><i data-lucide="list"></i> Lista</button>
+                <button onclick="switchView('grid')" id="btn-grid" class="px-4 py-2 rounded-md transition hover:bg-blue-600 flex items-center gap-2"><i data-lucide="layout-grid"></i> Cards</button>
+                <button onclick="switchView('calendar')" id="btn-calendar" class="px-4 py-2 rounded-md transition hover:bg-blue-600 flex items-center gap-2"><i data-lucide="calendar"></i> Calendario</button>
+                <button onclick="switchView('map')" id="btn-map" class="px-4 py-2 rounded-md transition hover:bg-blue-600 flex items-center gap-2"><i data-lucide="map"></i> Mapa</button>
+            </nav>
+        </div>
+    </header>
 
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- Filtros -->
+        <section class="bg-white p-6 rounded-xl shadow-sm mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                    <input type="text" id="search-name" placeholder="Nombre, lugar, concejo..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <select id="filter-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                        <option value="">Todas</option>
+                        <option value="Cultura">Cultura</option>
+                        <option value="Música">Música</option>
+                        <option value="Gastronomía">Gastronomía</option>
+                        <option value="Deporte">Deporte</option>
+                        <option value="Ocio">Ocio</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                    <input type="date" id="filter-start" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                    <input type="date" id="filter-end" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none">
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex gap-2">
+                    <button onclick="getLocation()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                        <i data-lucide="map-pin"></i> Cerca de mí
+                    </button>
+                    <button onclick="togglePastEvents()" id="btn-past" class="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition">
+                        Mostrar pasados
+                    </button>
+                </div>
+                <button onclick="resetFilters()" class="text-blue-600 font-medium hover:underline">Limpiar filtros</button>
+            </div>
+        </section>
 
+        <!-- Vistas de Contenido -->
+        <div id="view-list" class="space-y-4"></div>
+        <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+        <div id="view-calendar" class="bg-white p-4 rounded-xl shadow-sm hidden">
+            <div id="calendar-el"></div>
+        </div>
+        <div id="view-map" class="hidden">
+            <div id="map" class="shadow-md"></div>
+        </div>
 
+        <div id="no-results" class="hidden text-center py-20 text-gray-500">
+            <i data-lucide="search-x" class="mx-auto w-12 h-12 mb-4 text-gray-300"></i>
+            <p class="text-xl">No hemos encontrado eventos con esos criterios.</p>
+        </div>
+    </main>
 
+    <!-- Modal de Detalles -->
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 p-2 rounded-full z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
 
+    <script>
+        // --- DATOS ---
+        const eventos = [
+            { id: 1, titulo: "Semana Santa de Avilés", fecha_inicio: "2026-03-29T10:00:00", fecha_fin: "2026-04-05T22:00:00", descripcion: "Procesiones históricas de Interés Turístico Nacional.", gratuito: "Gratis", web_url: "https://www.aviles.es", portada: "https://picsum.photos/seed/aviles/600/400", tipo: "Religioso/Cultural", categoria: "Cultura", concejo: "Avilés", lugar: "Casco Histórico", gtp: [43.5562, -5.9248], direccion: "Plaza de España" },
+            { id: 2, titulo: "Fiesta del Bollo", fecha_inicio: "2026-04-06T12:00:00", fecha_fin: "2026-04-06T20:00:00", descripcion: "Comida multitudinaria en las calles de Avilés para celebrar el lunes de Pascua.", gratuito: "Gratis", web_url: "https://www.aviles.es", portada: "https://picsum.photos/seed/bollo/600/400", tipo: "Gastronómico", categoria: "Gastronomía", concejo: "Avilés", lugar: "Parque del Muelle", gtp: [43.5555, -5.9230], direccion: "Parque del Muelle" },
+            { id: 3, titulo: "L'Ascensión", fecha_inicio: "2026-05-14T09:00:00", fecha_fin: "2026-05-17T21:00:00", descripcion: "La gran fiesta del campo en la ciudad.", gratuito: "Gratis", web_url: "https://www.oviedo.es", portada: "https://picsum.photos/seed/oviedo/600/400", tipo: "Feria Tradicional", categoria: "Cultura", concejo: "Oviedo", lugar: "Casco Antiguo", gtp: [43.3603, -5.8448], direccion: "Plaza Catedral" },
+            { id: 4, titulo: "Boombastic Festival", fecha_inicio: "2026-07-16T16:00:00", fecha_fin: "2026-07-18T04:00:00", descripcion: "El festival de música urbana más importante de Asturias.", gratuito: "Desde 65€", web_url: "https://www.boombasticfestival.com", portada: "https://picsum.photos/seed/music/600/400", tipo: "Musical", categoria: "Música", concejo: "Llanera", lugar: "La Morgal", gtp: [43.4278, -5.8450], direccion: "Aeródromo de la Morgal" },
+            { id: 5, titulo: "Noche de San Juan", fecha_inicio: "2026-06-23T20:00:00", fecha_fin: "2026-06-24T06:00:00", descripcion: "Celebración del solsticio de verano con hogueras.", gratuito: "Gratis", web_url: "https://www.turismoasturias.es", portada: "https://picsum.photos/seed/fire/600/400", tipo: "Cultura/Fiesta", categoria: "Cultura", concejo: "Mieres", lugar: "Plaza Ayuntamiento", gtp: [43.2505, -5.7760], direccion: "Plaza de la Constitución" },
+            { id: 6, titulo: "Gijón Motortown", fecha_inicio: "2026-05-22T10:00:00", fecha_fin: "2026-05-24T20:00:00", descripcion: "Exhibición de motor y clásicos.", gratuito: "8€", web_url: "https://www.gijon.es", portada: "https://picsum.photos/seed/motor/600/400", tipo: "Exhibición", categoria: "Ocio", concejo: "Gijón", lugar: "Feria Luis Adaro", gtp: [43.5365, -5.6325], direccion: "Dr. Fleming" },
+            { id: 7, titulo: "Feria del Libro de Oviedo", fecha_inicio: "2026-05-02T11:00:00", fecha_fin: "2026-05-11T20:00:00", descripcion: "Firmas y cultura literaria.", gratuito: "Gratis", web_url: "https://www.oviedo.es", portada: "https://picsum.photos/seed/books/600/400", tipo: "Cultural", categoria: "Cultura", concejo: "Oviedo", lugar: "Paseo de los Álamos", gtp: [43.3615, -5.8505], direccion: "Calle Uría" },
+            { id: 8, titulo: "Metrópoli Gijón", fecha_inicio: "2026-06-26T17:00:00", fecha_fin: "2026-07-05T22:00:00", descripcion: "Cultura pop y conciertos.", gratuito: "6€", web_url: "https://www.metropoligijon.com", portada: "https://picsum.photos/seed/pop/600/400", tipo: "Festival Mix", categoria: "Ocio", concejo: "Gijón", lugar: "Recinto Ferial", gtp: [43.5365, -5.6325], direccion: "Paseo Dr. Fleming" },
+            { id: 9, titulo: "Festival de la Sidra Nava", fecha_inicio: "2026-07-10T12:00:00", fecha_fin: "2026-07-12T23:00:00", descripcion: "Sidra, folk y tradición.", gratuito: "Gratis", web_url: "https://www.ayto-nava.es", portada: "https://picsum.photos/seed/cider/600/400", tipo: "Gastronómico", categoria: "Gastronomía", concejo: "Nava", lugar: "Centro", gtp: [43.3585, -5.5020], direccion: "Calle Real" }
+            // Nota: Se pueden añadir más eventos siguiendo este patrón
+        ];
 
+        // --- ESTADO ---
+        let currentView = 'list';
+        let showPast = false;
+        let map = null;
+        let calendar = null;
+        let userLocation = null;
+        const now = new Date();
+
+        // --- INICIALIZACIÓN ---
+        window.onload = () => {
+            lucide.createIcons();
+            initMap();
+            initCalendar();
+            render();
+            
+            // Listeners para filtros
+            document.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('change', render);
+                if (el.tagName === 'INPUT' && el.type === 'text') {
+                    el.addEventListener('keyup', render);
+                }
+            });
+        };
+
+        function switchView(view) {
+            currentView = view;
+            ['list', 'grid', 'calendar', 'map'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+                document.getElementById(`btn-${v}`).classList.toggle('bg-blue-600', v === view);
+            });
+            if (view === 'calendar') calendar.render();
+            if (view === 'map') setTimeout(() => map.invalidateSize(), 200);
+            render();
+        }
+
+        function togglePastEvents() {
+            showPast = !showPast;
+            document.getElementById('btn-past').innerText = showPast ? 'Ocultar pasados' : 'Mostrar pasados';
+            document.getElementById('btn-past').classList.toggle('bg-gray-200', showPast);
+            render();
+        }
+
+        function initMap() {
+            map = L.map('map').setView([43.36, -5.84], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+        }
+
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar-el');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                firstDay: 1,
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                eventClick: (info) => openModal(info.event.id)
+            });
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    userLocation = [pos.coords.latitude, pos.coords.longitude];
+                    render();
+                });
+            }
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function resetFilters() {
+            document.getElementById('search-name').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-start').value = '';
+            document.getElementById('filter-end').value = '';
+            userLocation = null;
+            render();
+        }
+
+        // --- LÓGICA DE RENDERIZADO ---
+        function render() {
+            const search = document.getElementById('search-name').value.toLowerCase();
+            const category = document.getElementById('filter-category').value;
+            const fStart = document.getElementById('filter-start').value;
+            const fEnd = document.getElementById('filter-end').value;
+
+            let filtered = eventos.filter(ev => {
+                const dateStart = new Date(ev.fecha_inicio);
+                const dateEnd = new Date(ev.fecha_fin);
+                
+                // Ocultar pasados si no se solicita
+                if (!showPast && dateEnd < now) return false;
+
+                // Texto
+                const matchText = ev.titulo.toLowerCase().includes(search) || 
+                                 ev.lugar.toLowerCase().includes(search) || 
+                                 ev.concejo.toLowerCase().includes(search);
+                
+                // Categoría
+                const matchCat = category === "" || ev.categoria === category;
+
+                // Rango de fechas
+                let matchRange = true;
+                if (fStart) matchRange = matchRange && dateStart >= new Date(fStart);
+                if (fEnd) matchRange = matchRange && dateStart <= new Date(fEnd);
+
+                // Cerca de mí (rango 30km)
+                let matchDist = true;
+                if (userLocation) {
+                    const dist = getDistance(userLocation[0], userLocation[1], ev.gtp[0], ev.gtp[1]);
+                    matchDist = dist < 30;
+                }
+
+                return matchText && matchCat && matchRange && matchDist;
+            });
+
+            // Ordenar por cercanía de fecha
+            filtered.sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
+
+            // Actualizar Vistas
+            updateListView(filtered);
+            updateGridView(filtered);
+            updateCalendar(filtered);
+            updateMap(filtered);
+
+            document.getElementById('no-results').classList.toggle('hidden', filtered.length > 0);
+            lucide.createIcons();
+        }
+
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString('es-ES', { 
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+            });
+        }
+
+        function updateListView(data) {
+            const container = document.getElementById('view-list');
+            container.innerHTML = data.map(ev => `
+                <div onclick="openModal(${ev.id})" class="bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-blue-300 transition cursor-pointer flex gap-4 items-center">
+                    <img src="${ev.portada}" class="w-16 h-16 rounded-lg object-cover" alt="img">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${ev.titulo}</h3>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-4 h-4"></i> ${formatDate(ev.fecha_inicio)}</span>
+                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-4 h-4"></i> ${ev.lugar}, ${ev.concejo}</span>
+                            <span class="bg-blue-100 text-blue-700 px-2 rounded font-medium">${ev.categoria}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-blue-600">${ev.gratuito}</span>
+                        <i data-lucide="chevron-right" class="text-gray-300 ml-2 inline"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateGridView(data) {
+            const container = document.getElementById('view-grid');
+            container.innerHTML = data.map(ev => `
+                <div onclick="openModal(${ev.id})" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 group">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="${ev.portada}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="img">
+                        <span class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm">${ev.categoria}</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-xl mb-2 line-clamp-1">${ev.titulo}</h3>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">${ev.descripcion}</p>
+                        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                            <span class="text-xs font-medium text-gray-600 flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i> ${ev.concejo}
+                            </span>
+                            <span class="text-blue-600 font-bold">${ev.gratuito}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateCalendar(data) {
+            calendar.removeAllEvents();
+            calendar.addEventSource(data.map(ev => ({
+                id: ev.id,
+                title: ev.titulo,
+                start: ev.fecha_inicio,
+                end: ev.fecha_fin,
+                color: ev.categoria === 'Música' ? '#ef4444' : '#3b82f6'
+            })));
+        }
+
+        function updateMap(data) {
+            // Limpiar marcadores previos
+            map.eachLayer(layer => { if(layer instanceof L.Marker) map.removeLayer(layer); });
+            data.forEach(ev => {
+                L.marker(ev.gtp).addTo(map)
+                    .bindPopup(`<div class="font-bold">${ev.titulo}</div><button onclick="openModal(${ev.id})" class="text-blue-600 text-xs mt-1">Ver detalles</button>`);
+            });
+        }
+
+        // --- MODAL Y COMPARTIR ---
+        function openModal(id) {
+            const ev = eventos.find(e => e.id == id);
+            const content = document.getElementById('modal-content');
+            
+            // Generar links de compartir
+            const textToShare = encodeURIComponent(`¡Mira este evento en Asturias! ${ev.titulo} el ${formatDate(ev.fecha_inicio)} en ${ev.lugar}. Más info: ${ev.web_url}`);
+            const wsLink = `https://wa.me/?text=${textToShare}`;
+            
+            // Google Calendar Link
+            const gCalLink = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.titulo)}&dates=${ev.fecha_inicio.replace(/-|:|\.\d\d\d/g,"")}/${ev.fecha_fin.replace(/-|:|\.\d\d\d/g,"")}&details=${encodeURIComponent(ev.descripcion)}&location=${encodeURIComponent(ev.direccion + ", " + ev.concejo)}`;
+
+            content.innerHTML = `
+                <img src="${ev.portada}" class="w-full h-64 object-cover" alt="portada">
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-3xl font-bold">${ev.titulo}</h2>
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">${ev.gratuito}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 text-gray-600">
+                        <div class="space-y-3">
+                            <p class="flex items-center gap-3"><i data-lucide="calendar"></i> <span><strong>Inicio:</strong> ${formatDate(ev.fecha_inicio)}</span></p>
+                            <p class="flex items-center gap-3"><i data-lucide="calendar-check"></i> <span><strong>Fin:</strong> ${formatDate(ev.fecha_fin)}</span></p>
+                        </div>
+                        <div class="space-y-3">
+                            <p class="flex items-center gap-3"><i data-lucide="map-pin"></i> <span><strong>Lugar:</strong> ${ev.lugar}, ${ev.concejo}</span></p>
+                            <p class="flex items-center gap-3"><i data-lucide="info"></i> <span><strong>Categoría:</strong> ${ev.categoria}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-xl mb-8">
+                        <h4 class="font-bold mb-2">Descripción</h4>
+                        <p class="text-gray-700">${ev.descripcion}</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-4">
+                        <a href="${ev.web_url}" target="_blank" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition">
+                            Ver web oficial <i data-lucide="external-link" class="w-5 h-5"></i>
+                        </a>
+                        <button onclick="window.open('${wsLink}', '_blank')" class="bg-green-500 text-white py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-600 transition">
+                             WhatsApp <i data-lucide="share-2" class="w-5 h-5"></i>
+                        </button>
+                        <a href="${gCalLink}" target="_blank" class="flex-1 border border-gray-300 py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-100 transition">
+                            Google Calendar <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // Cerrar modal al clickar fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target == modal) closeModal();
+        }
+    </script>
 </body>
-</html
+</html>
