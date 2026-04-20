@@ -21,6 +21,18 @@
         .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
         #loading-overlay { backdrop-filter: blur(4px); }
     </style>
+
+
+
+<!-- Enlace al archivo de manifiesto -->
+<link rel="manifest" href="./manifest.webmanifest">
+
+<!-- Meta etiquetas adicionales para compatibilidad con iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AsturFest">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-900 font-sans">
 
@@ -513,5 +525,21 @@
             if (event.target == modal) closeModal();
         }
     </script>
+
+
+<!-- llamada al Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('Service Worker registrado con éxito:', registration.scope);
+        })
+        .catch((error) => {
+          console.log('Fallo en el registro del Service Worker:', error);
+        });
+    });
+  }
+</script>
 </body>
 </html>
