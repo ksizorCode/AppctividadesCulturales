@@ -1,6 +1,6 @@
 {
-  "name": "FolixApp",
-  "short_name": "FolixApp",
+  "name": "folixApp",
+  "short_name": "folixApp",
   "description": "Guía completa de eventos en Asturias con soporte offline.",
   "start_url": "./index.html",
   "orientation": "portrait",
